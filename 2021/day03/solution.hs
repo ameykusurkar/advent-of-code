@@ -2,6 +2,8 @@ import Data.Bits
 import Data.Char
 import Data.List
 
+-- TODO: Needs cleaning up
+
 main = do
   strs <- fmap lines getContents
   print $ solve1 strs

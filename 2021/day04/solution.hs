@@ -1,12 +1,11 @@
-import Data.Maybe
 import Data.List
 
 main = do
   nums <- fmap parseNums getLine
   getLine
   boards <- fmap parseBoards getContents
-  print $ solve1 nums boards
-  print $ solve2 nums boards
+  print $ nthWin 1 nums boards
+  print $ nthWin (length boards) nums boards
 
 parseNums:: String -> [Int]
 parseNums = map read . splitOn ','
@@ -15,22 +14,15 @@ type Board = [[(Int, Bool)]]
 
 parseBoards :: String -> [Board]
 parseBoards = map buildBoard . splitOn "" . lines
-  where buildBoard = map (map (\x -> (x, False))) . map (map read) . map words
+  where buildBoard = (map . map) buildCell . map words
+        buildCell x = (read x, False)
 
-solve1 :: [Int] -> [Board] -> Int
-solve1 (n:ns) boards = case find didWin boards' of
-  Just board -> n * sum (unmarked board)
-  Nothing -> solve1 ns boards'
+nthWin :: Int -> [Int] -> [Board] -> Int
+nthWin w [] _ = error (show w)
+nthWin w (n:ns) boards = case (w, piles didWin boards') of
+  (1, (board:_, _)) -> n * sum (unmarked board)
+  (_, (wins, remaining)) -> nthWin (w - length wins) ns remaining
   where boards' = map (bingo n) boards
-
-solve2 :: [Int] -> [Board] -> Int
-solve2 (n:ns) boards
-  | gameOver boards' = n * sum (unmarked (bingo n lastToWin))
-  | otherwise = solve2 ns boards'
-  where boards' = map (bingo n) boards
-        gameOver = (== 0) . length . yetToWin
-        yetToWin = filter (not . didWin)
-        lastToWin = head (yetToWin boards)
 
 didWin :: Board -> Bool
 didWin rows = any allTrue rows || any allTrue (transpose rows)
@@ -40,10 +32,14 @@ unmarked :: Board -> [Int]
 unmarked = map fst. filter (not . snd) . concat
 
 bingo :: Int -> Board -> Board
-bingo n rows = map updateRow rows
-  where updateRow = map (\(x, b) -> if n == x then (x, True) else (x, b))
+bingo n rows = (map . map) update rows
+  where update (x, b) = (x, n == x || b)
 
 splitOn :: Eq a => a -> [a] -> [[a]]
 splitOn c str = case break (== c) str of
   (frag, _:rem) -> frag : splitOn c rem
   (frag, [])    -> [frag]
+
+piles :: (a -> Bool) -> [a] -> ([a], [a])
+piles pred xs = foldl addToPile ([], []) xs
+  where addToPile (ts, fs) x = if pred x then (x:ts, fs) else (ts, x:fs)
