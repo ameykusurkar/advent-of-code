@@ -43,28 +43,26 @@ count :: (a -> Bool) -> [a] -> Int
 count pred = length . filter pred
 
 solve2 :: [String] -> Int
-solve2 str = foo * bar
-  where foo = parseBinary $ map boolToChar $ winningBa mostCommonBit bas
-        bar = parseBinary $ map boolToChar $ winningBa leastCommonBit bas
-        bas = transpose $ map (map charToBool) str
+-- solve2 str = foo * bar
+solve2 str = (winBy isLeastCommonBit bas) * (winBy isMostCommonBit bas)
+  where winBy f = parseBinary . findWinner f
+        mostCommonBit bs = (count (== '1') bs) >= (count (== '0') bs)
+        leastCommonBit = boolToChar . not . mostCommonBit
+        isMostCommonBit ba = map (== ((boolToChar . mostCommonBit) ba)) ba
+        isLeastCommonBit ba = map (== (leastCommonBit ba)) ba
+        bas = transpose str
 
-charToBool :: Char -> Bool
-charToBool = (== '1')
-
-type BitArray = [Bool]
-
--- Taking an array of bit arrays, returns the bit array where each bit "wins"
--- when comparing against the the other bits at the corresponding position 
-winningBa :: (BitArray -> Bool) -> [BitArray] -> BitArray
-winningBa _ [] = []
-winningBa _ ((b:[]):bas) = b : (map head bas)
-winningBa winCond (ba:bas) = winBit : (winningBa winCond winningBas)
-  where winningBas = map (filterTrues hasWon) bas
-        hasWon = map (== winBit) ba
-        winBit = winCond ba
+-- Takes an array of "rounds" where each round is an array of candidates.
+-- Candidates at the same index across rounds are part of the same team.
+-- A candidate "wins" if it is in the majority in that round, and the team
+-- progresses to the next round. Returns the "winning" team.
+findWinner :: ([a] -> [Bool]) -> [[a]] -> [a]
+findWinner _didWin [] = []
+findWinner _didWin ((cand:[]):rounds) = cand : (map head rounds)
+findWinner didWin (round:rounds) = winner : (findWinner didWin winningTeams)
+  where winningTeams = map (filterTrues hasWon) rounds
+        hasWon = didWin round
+        winner = head $ filterTrues hasWon round 
 
 filterTrues :: [Bool] -> [a] -> [a]
 filterTrues trues = map snd. filter fst . zip trues
-
-shouldPick :: (a -> Bool) -> [a] -> [Bool]
-shouldPick pred xs = map pred xs
