@@ -8,9 +8,10 @@ data Movement = Up Int | Down Int | Forward Int
 parse :: String -> [Movement]
 parse = (map parseLine) . lines
   where
-    parseLine ('u':'p':' ':n) = Up (read n)
-    parseLine ('d':'o':'w':'n':' ':n) = Down (read n)
-    parseLine ('f':'o':'r':'w':'a':'r':'d':' ':n) = Forward (read n)
+    parseLine line = case words line of
+      ["up", n] -> Up (read n)
+      ["down", n] -> Down (read n)
+      ["forward", n] -> Forward (read n)
 
 solve1 :: [Movement] -> Int
 solve1 ms = horizontal * depth
