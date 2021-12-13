@@ -1,14 +1,17 @@
+{-# LANGUAGE TupleSections #-}
+
+import qualified Data.Map as M
+
+type Fish = Counter Int
+type Counter k = M.Map k Int
+
 main = do
   nums <- fmap parse getLine
-  print $ length $ apply 80 step nums
+  print $ simulate 80 nums
+  print $ simulate 256 nums
 
 parse :: String -> [Int]
 parse = map read . splitOn ','
-
-step :: [Int] -> [Int]
-step [] = []
-step (0:rest) = 8 : 6 : step rest
-step (n:rest) = (n - 1) : step rest
 
 splitOn :: Eq a => a -> [a] -> [[a]]
 splitOn c str = case break (== c) str of
@@ -17,3 +20,12 @@ splitOn c str = case break (== c) str of
 
 apply :: Int -> (a -> a) -> a -> a
 apply n f = foldl (.) id (replicate n f)
+
+simulate :: Int -> [Int] -> Int
+simulate n = sum . apply n step . intoCounter
+  where intoCounter = M.fromListWith (+) . map (,1)
+
+step :: Fish -> Fish
+step = M.unionsWith (+) . M.mapWithKey stepAge
+  where stepAge 0 n = M.fromList [(8, n), (6, n)]
+        stepAge a n = M.fromList [(a - 1, n)]
