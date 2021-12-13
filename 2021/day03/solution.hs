@@ -15,7 +15,7 @@ parseBinary str = sum $ zipWith shift bits indexes
         indexes = reverse $ take (length str) [0..]
 
 solve1 :: [String] -> Int
-solve1 strs = (mostCommonBits bits) * (leastCommonBits bits)
+solve1 strs = mostCommonBits bits * leastCommonBits bits
  where
    mostCommonBits = parseBinary . map moreCommonChar
    leastCommonBits = parseBinary . map (flipC . moreCommonChar)
@@ -31,7 +31,7 @@ boolToChar :: Bool -> Char
 boolToChar b = if b then '1' else '0'
 
 mostCommonBit :: [Bool] -> Bool
-mostCommonBit bs = (count id bs) >= (count (not . id) bs)
+mostCommonBit bs = count id bs >= count not bs
 
 leastCommonBit :: [Bool] -> Bool
 leastCommonBit = not . mostCommonBit
@@ -46,12 +46,12 @@ count pred = length . filter pred
 
 solve2 :: [String] -> Int
 -- solve2 str = foo * bar
-solve2 str = (winBy isLeastCommonBit bas) * (winBy isMostCommonBit bas)
+solve2 str = winBy isLeastCommonBit bas * winBy isMostCommonBit bas
   where winBy f = parseBinary . findWinner f
-        mostCommonBit bs = (count (== '1') bs) >= (count (== '0') bs)
+        mostCommonBit bs = count (== '1') bs >= count (== '0') bs
         leastCommonBit = boolToChar . not . mostCommonBit
-        isMostCommonBit ba = map (== ((boolToChar . mostCommonBit) ba)) ba
-        isLeastCommonBit ba = map (== (leastCommonBit ba)) ba
+        isMostCommonBit ba = map (== (boolToChar . mostCommonBit) ba) ba
+        isLeastCommonBit ba = map (== leastCommonBit ba) ba
         bas = transpose str
 
 -- Takes an array of "rounds" where each round is an array of candidates.
@@ -60,8 +60,8 @@ solve2 str = (winBy isLeastCommonBit bas) * (winBy isMostCommonBit bas)
 -- progresses to the next round. Returns the "winning" team.
 findWinner :: ([a] -> [Bool]) -> [[a]] -> [a]
 findWinner _didWin [] = []
-findWinner _didWin ((cand:[]):rounds) = cand : (map head rounds)
-findWinner didWin (round:rounds) = winner : (findWinner didWin winningTeams)
+findWinner _didWin ([cand]:rounds) = cand : map head rounds
+findWinner didWin (round:rounds) = winner : findWinner didWin winningTeams
   where winningTeams = map (filterTrues hasWon) rounds
         hasWon = didWin round
         winner = head $ filterTrues hasWon round 

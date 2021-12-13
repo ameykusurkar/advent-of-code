@@ -4,7 +4,7 @@ main = do
   print $ solve2 nums
 
 parse :: String -> [Int]
-parse = (map read) . lines
+parse = map read . lines
 
 solve1 :: [Int] -> Int
 solve1 = countIncreasing
@@ -20,6 +20,7 @@ pairwise :: [a] -> [(a, a)]
 pairwise xs = zip xs (tail xs)
 
 threewise :: [a] -> [(a, a, a)]
+threewise [] = undefined
 threewise (x:xs) = zip3 (x:xs) xs (tail xs)
 
 count :: (a -> Bool) -> [a] -> Int

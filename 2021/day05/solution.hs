@@ -11,9 +11,9 @@ type Point = (Int, Int)
 
 readSegment :: String -> Segment
 readSegment str = ((read x1, read y1), (read x2, read y2))
-  where x1:y1:[] = splitOn ',' p1
-        x2:y2:[] = splitOn ',' p2
-        p1:_:p2:[] = words str
+  where [x1, y1] = splitOn ',' p1
+        [x2, y2] = splitOn ',' p2
+        [p1, _, p2] = words str
 
 overlap :: [Segment] -> [Point]
 overlap segs = [p | (p, c) <- freqs, c > 1]

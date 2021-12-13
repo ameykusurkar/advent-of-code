@@ -14,7 +14,7 @@ type Board = [[(Int, Bool)]]
 
 parseBoards :: String -> [Board]
 parseBoards = map buildBoard . splitOn "" . lines
-  where buildBoard = (map . map) buildCell . map words
+  where buildBoard = map (map buildCell . words)
         buildCell x = (read x, False)
 
 nthWin :: Int -> [Int] -> [Board] -> Int
@@ -26,13 +26,13 @@ nthWin w (n:ns) boards = case (w, piles didWin boards') of
 
 didWin :: Board -> Bool
 didWin rows = any allTrue rows || any allTrue (transpose rows)
-  where allTrue = all id . map snd
+  where allTrue = all snd
 
 unmarked :: Board -> [Int]
 unmarked = map fst. filter (not . snd) . concat
 
 bingo :: Int -> Board -> Board
-bingo n rows = (map . map) update rows
+bingo n = (map . map) update
   where update (x, b) = (x, n == x || b)
 
 splitOn :: Eq a => a -> [a] -> [[a]]
@@ -41,5 +41,5 @@ splitOn c str = case break (== c) str of
   (frag, [])    -> [frag]
 
 piles :: (a -> Bool) -> [a] -> ([a], [a])
-piles pred xs = foldl addToPile ([], []) xs
+piles pred = foldl addToPile ([], [])
   where addToPile (ts, fs) x = if pred x then (x:ts, fs) else (ts, x:fs)
