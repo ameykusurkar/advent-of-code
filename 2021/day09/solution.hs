@@ -7,36 +7,27 @@ type Window a = Triple (Triple a)
 data Triple a = Triple a a a deriving (Foldable, Functor, Show)
 
 data Node = Node { getDir :: Direction, getC :: Int, getV :: Int }
-data Direction = U | D | L | R | S | W deriving (Eq, Show)
-
-instance Show Node where
-  show (Node W _ _) = "     "
-  show (Node dir c v) = show dir ++ " " ++ show c ++ " " ++ show v
+data Direction = U | D | L | R | S | W deriving Eq
 
 main = do
-  raw <- getContents
-  let entries = (map parseLine . lines) raw
+  entries <- fmap (map2d digitToInt . lines) getContents
   print $ solve1 entries
-  print (solve2 (-55) entries)
-
-parseLine :: String -> [Int]
-parseLine = map digitToInt
+  print $ solve2 entries
 
 solve1 :: [[Int]] -> Int
-solve1 = sum .map (+1) . getLowPoints
+solve1 = sum .map (+1) . getSinks
 
-solve2 :: Int -> [[Int]] -> Int
-solve2 lim = product . take 3 . reverse . sort . map getV . sinks
+solve2 :: [[Int]] -> Int
+solve2 = product . take 3 . reverse . sort . map getV . sinks
   where sinks = concat . filter2d isSink . reduced
-        isSink (Node d _ _) = d == S
-        reduced = repeatReduceNode lim . init
-        init = map2d initNode . window . surround W . map2d pointD . window . surround 9
+        isSink = (== S) . getDir
+        reduced = repeatReduceNode . init
+        init = map2d initNode . window W . map2d initDir . window 9
 
-solve0 :: [[Int]] -> [[Char]]
-solve0 = map2d point . window . surround 9
-
-getLowPoints :: [[Int]] -> [Int]
-getLowPoints = concat . map2d middle . filter2d isLowPoint . window . surround 9
+getSinks :: [[Int]] -> [Int]
+getSinks = concat . map2d middle . filter2d isSink . window 9
+  where isSink = (== S) . initDir
+        middle (Triple _ (Triple _ mid _) _) = mid
 
 inThrees :: [a] -> [Triple a]
 inThrees [] = undefined
@@ -49,18 +40,15 @@ map2d = map . map
 filter2d :: (a -> Bool) -> [[a]] -> [[a]]
 filter2d = map . filter
 
-window :: [[a]] -> [[Window a]]
-window = map inThrees . transpose . map inThrees
+window :: a -> [[a]] -> [[Window a]]
+window wall = map inThrees . transpose . map inThrees . surround wall
 
 surround :: a -> [[a]] -> [[a]]
 surround x = map (surroundRow x) . transpose . map (surroundRow x)
   where surroundRow x xs = x : xs ++ [x]
 
-isLowPoint :: Window Int -> Bool
-isLowPoint w@(Triple (Triple _ t _) (Triple l mid r) (Triple _ b _)) = mid < minimum [t, b, l, r]
-
-pointD :: Window Int -> Direction
-pointD (Triple (Triple _ l _) (Triple t mid b) (Triple _ r _))
+initDir :: Window Int -> Direction
+initDir (Triple (Triple _ l _) (Triple t mid b) (Triple _ r _))
   | mid == 9 = W
   | null cands = S
   | small == t = U
@@ -71,37 +59,21 @@ pointD (Triple (Triple _ l _) (Triple t mid b) (Triple _ r _))
   where small = minimum cands
         cands = filter (<mid) [t, b, l, r]
 
-repeatReduceNode :: Int -> [[Node]] -> [[Node]]
--- repeatReduceNode 0 ns = ns
-repeatReduceNode limit ns = if noDirs ns
-                        then ns
-                        else repeatReduceNode (limit - 1) (map2d reduceNode wNode)
-  where wNode = (window . surround wall) ns
-        wall = Node W 0 0 
-        noDirs = null . concat . filter2d hasDir
-        -- takeLeaves = concat . map2d extractLeaf
-        -- extractLeaf (Leaf x) = x 
-        -- extractLeaf _        = undefined
-        -- noBranches = null . concat . filter2d (not . isBranch)
-
-hasDir :: Node -> Bool
-hasDir (Node d _ _) = d `elem` [U, D, L, R]
-
-point :: Window Int -> Char
-point (Triple (Triple _ l _) (Triple t mid b) (Triple _ r _))
-  | mid == 9   = ' '
-  | isLeaf mid = 'x'
-  | otherwise  = 'o'
-  where isLeaf x = all (\n -> n == 9 || x > n) cands
-        cands = [t, b, l, r]
-
 initNode :: Window Direction -> Node
 initNode w@(Triple (Triple _ l _) (Triple t mid b) (Triple _ r _)) = Node mid incoming 1
   where incoming = countIncoming w
 
 countIncoming :: Window Direction -> Int
-countIncoming w@(Triple (Triple _ l _) (Triple t mid b) (Triple _ r _)) = count id incoming
-  where incoming = [t == D, b == U, l == R, r == L]
+countIncoming w@(Triple (Triple _ l _) (Triple t mid b) (Triple _ r _)) = incoming
+  where incoming = count id [t == D, b == U, l == R, r == L]
+
+repeatReduceNode :: [[Node]] -> [[Node]]
+repeatReduceNode ns = if noDirs ns
+                      then ns
+                      else repeatReduceNode (map2d reduceNode wNode)
+  where wNode = window (Node W 0 0) ns
+        noDirs = null . concat . filter2d hasDir
+        hasDir (Node d _ _) = d `elem` [U, D, L, R]
 
 reduceNode :: Window Node -> Node
 reduceNode (Triple (Triple _ l _) (Triple t mid b) (Triple _ r _)) = transform mid
@@ -117,9 +89,6 @@ reduceNode (Triple (Triple _ l _) (Triple t mid b) (Triple _ r _)) = transform m
                    , if dirL == R && cL == 0 then vL else 0
                    , if dirR == L && cR == 0 then vR else 0 ]
         [Node dirT cT vT, Node dirB cB vB, Node dirL cL vL, Node dirR cR vR] = [t, b, l, r]
-
-middle :: Window a -> a
-middle (Triple _ (Triple _ mid _) _) = mid
 
 count :: (a -> Bool) -> [a] -> Int
 count pred = length . filter pred
