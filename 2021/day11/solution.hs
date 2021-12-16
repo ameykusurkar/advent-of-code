@@ -10,29 +10,28 @@ main = do
   raw <- getContents
   let entries = (map2d digitToInt . lines) raw
   print $ solve1 entries
+  print $ solve2 0 entries
 
 solve1 :: [[Int]] -> Int
 solve1 = fst . apply 100 step . (0,)
   where apply n f = foldl (.) id (replicate n f)
 
+solve2 :: Int -> [[Int]] -> Int
+solve2 i gr = if count2d (==0) gr == count2d (const True) gr then i else solve2 (i+1) gr'
+  where (_, gr') = step (0, gr)
+
 step :: (Int, [[Int]]) -> (Int, [[Int]])
-step (c, grid) = (c + count2d totalFlashed grid'', map2d reset grid'')
+step (c, grid) = (c + count2d totalFlashed grid', map2d reset grid')
   where addOne x = let x' = x + 1 in (x', x' > 9, x' > 9)
         reset (x, _, _) = if x > 9 then 0 else x
-        grid' = map2d addOne grid
-        grid'' = propagate grid'
+        grid' = (propagate . map2d addOne) grid
+        totalFlashed (_, b, _) = b
 
 propagate :: [[(Int, Bool, Bool)]] -> [[(Int, Bool, Bool)]]
 propagate gr = if numFlashes == 0 then gr' else propagate gr'
   where gr' = (map2d increment . windowed) gr
         windowed = window (0, False, False)
         numFlashes = count2d justFlashed gr'
-
-justFlashed :: (Int, Bool, Bool) -> Bool
-justFlashed (_, _, b) = b
-
-totalFlashed :: (Int, Bool, Bool) -> Bool
-totalFlashed (_, b, _) = b
 
 increment :: Window (Int, Bool, Bool) -> (Int, Bool, Bool)
 increment (Triple (Triple tl l bl) (Triple t (e, f, jf) b) (Triple tr r br)) = (e', f', jf')
@@ -41,6 +40,9 @@ increment (Triple (Triple tl l bl) (Triple t (e, f, jf) b) (Triple tr r br)) = (
         jf' = not f && f'
         countFlashes = count id . map justFlashed
         neibs = [tl, l, bl, t, b, tr, r, br]
+
+justFlashed :: (Int, Bool, Bool) -> Bool
+justFlashed (_, _, b) = b
 
 inThrees :: [a] -> [Triple a]
 inThrees [] = undefined
