@@ -15,8 +15,25 @@ fn main() -> std::io::Result<()> {
 }
 
 fn parse(input: String) -> Result<Vec<Vec<u32>>, ParseIntError> {
-    input
-        .split("\n\n")
-        .map(|block| block.lines().map(|i| i.parse()).collect())
+    blocks(&input)
+        .map(|block| block.iter().map(|i| i.parse()).collect())
         .collect()
+}
+
+fn blocks<'a>(string: &'a str) -> Blocks<'a, '_> {
+    Blocks {
+        split: string.split("\n\n"),
+    }
+}
+
+struct Blocks<'a, 'b> {
+    split: std::str::Split<'a, &'b str>,
+}
+
+impl<'a> Iterator for Blocks<'a, '_> {
+    type Item = Vec<&'a str>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        Some(self.split.next()?.lines().collect())
+    }
 }
