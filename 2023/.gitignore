@@ -1,3 +1,4 @@
 solution
 *.o
 *.hi
+input.txt
