@@ -1,18 +1,19 @@
 module Main where
 
-import Data.Map (Map, fromList, lookup)
+import Data.Map (Map, fromList, lookup, keys)
 import Data.Maybe (fromJust)
 
 main = do
-  dirs <- getLine
+  dirs <- fmap cycle getLine
   getLine
-  parsed <- fmap (map parse . lines) getContents
-  let m = fromList parsed
-  print $ solve m ["AAA"] (cycle dirs)
-  -- let starts = filter (endsWith 'A') $ map fst parsed
-  -- print $ solve m starts (cycle dirs)
+  m <- fmap (fromList . map parse . lines) getContents
+  let solve = foldl1 lcm . map (cycleLength m . (dirs,))
+  let nodes = filter (endsWith 'A') $ keys m
+  print (solve ["AAA"])
+  print (solve nodes)
 
 type MyMap = Map String (String, String)
+type Point = ([Char], String)
 
 parse :: String -> (String, (String, String))
 parse str = (take 3 str, (l, r))
@@ -21,13 +22,15 @@ parse str = (take 3 str, (l, r))
     l = take 3 val
     r = take 3 $ drop 5 val
 
-solve :: MyMap -> [String] -> [Char] -> Int
-solve m locs (d : ds)
-  | all (endsWith 'Z') locs = 0
-  | otherwise = 1 + solve m locs' ds
+cycleLength :: MyMap -> Point -> Int
+cycleLength m = length . takeWhile notTerminal . iterate (step m)
   where
-    locs' = map solveOne locs
-    solveOne = fetch d . fromJust . (`Data.Map.lookup` m)
+    notTerminal = not . endsWith 'Z' . snd
+
+step :: MyMap -> Point -> Point
+step m (d:ds, pos) = (ds, lookup pos)
+  where
+    lookup = fetch d . fromJust . (`Data.Map.lookup` m)
     fetch 'L' = fst
     fetch 'R' = snd
 
