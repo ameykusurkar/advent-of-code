@@ -27,8 +27,11 @@ splitOn c str = case break (== c) str of
   (frag, []) -> [frag]
 
 solve :: [Char] -> [Int] -> Int
+solve []         [] = 1
+solve []         (n : ns) = 0
 solve ('.' : ss) ns       = solve ss ns
 solve ('?' : ss) ns       = solve ('#' : ss) ns + solve ('.' : ss) ns
+solve ('#' : ss) []       = 0
 solve ('#' : ss) (n : ns)
   | hashes >  n                    = 0
   | possib <  n && null rem        = 0
@@ -40,9 +43,6 @@ solve ('#' : ss) (n : ns)
   where hashes = 1 + length (takeWhile (=='#') ss)
         possib = 1 + length (takeWhile (=='?') ss)
         rem = drop (min possib n) ('#' : ss)
-solve []         [] = 1
-solve (s:ss)     [] = 0
-solve []         (n : ns) = 0
 solve ss ns = error $ show ss ++ show ns
 
 copies delim str = intercalate delim $ replicate 5 str
