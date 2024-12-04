@@ -1,5 +1,6 @@
 import Control.Applicative
 import Data.Char (isDigit)
+import Control.Monad.Trans.State
 
 main = do
   input <- getContents
@@ -9,12 +10,12 @@ main = do
 solve :: String -> Int
 solve str = sum $ filter (> 0) xs
   where
-    Just (xs, _) = parse extract str
+    Just (xs, _) = runStateT extract str
 
 solve2 :: String -> Int
 solve2 str = sum $ ignoreDisabled (-1) xs
   where
-    Just (xs, _) = parse extract str
+    Just (xs, _) = runStateT extract str
 
 extract = some $ junk *> (mul <|> doo <|> dont <|> discard) <* junk
   where
@@ -42,33 +43,10 @@ ignoreDisabled (-2) (x : xs) = 0 : ignoreDisabled (-2) xs
 
 ------ Parser combinator boilerplate -------
 
-newtype Parser a = Parser {parse :: String -> Maybe (a, String)}
-
-instance Functor Parser where
-  fmap f p = do
-    x <- p
-    return (f x)
-
-instance Applicative Parser where
-  pure x = Parser (\input -> Just (x, input))
-  pf <*> pa = do
-    f <- pf
-    a <- pa
-    return (f a)
-
-instance Monad Parser where
-  Parser pa >>= f = Parser pb
-    where
-      pb str = do
-        (a, str') <- pa str
-        parse (f a) str'
-
-instance Alternative Parser where
-  empty = Parser (const Nothing)
-  (Parser p) <|> (Parser q) = Parser (\input -> p input <|> q input)
+type Parser a = StateT String Maybe a
 
 charWhen :: (Char -> Bool) -> Parser Char
-charWhen f = Parser p
+charWhen f = StateT p
   where
     p "" = Nothing
     p (c : cs)
