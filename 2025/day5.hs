@@ -1,7 +1,9 @@
 main = do
   raw <- getContents
   let (ranges, ids) = parse raw
+  -- print ranges
   print $ solve ranges ids
+  print $ solve2 ranges
 
 type Range = (Int, Int)
 
@@ -28,3 +30,26 @@ inRange (a, b) x = a <= x && x <= b
 
 inSomeRange :: [Range] -> Int -> Bool
 inSomeRange ranges x = any (`inRange` x) ranges
+
+solve2 :: [Range] -> Int
+solve2 = sum . map dist . collapse
+  where
+    dist (a, b) = b - a + 1
+
+combine :: Range -> Range -> Maybe Range
+combine (st1, end1) (st2, end2)
+  | (st1 <= end2) && (st2 <= end1) = Just (min st1 st2, max end1 end2)
+  | otherwise = Nothing
+
+slot :: [Range] -> Range -> [Range]
+slot [] range = [range]
+slot (r : rs) range = case combine range r of
+  Just r' -> r' : rs
+  Nothing -> r : slot rs range
+
+collapse :: [Range] -> [Range]
+collapse xs
+  | collapsed == xs = xs
+  | otherwise = collapse collapsed
+  where
+    collapsed = foldl slot [] xs
